@@ -42,5 +42,17 @@ const userMsg: Message = { id: String(Date.now()) + '-u', sender: 'you', text: t
 setMessages((m) => [...m, userMsg]);
 setInput('');
 
+setTimeout(() => {
+const botMsg: Message = { id: String(Date.now()) + '-b', sender: 'bot', text: `Got your message: "${text.trim()}"`, time: nowTime() };
+setMessages((m) => [...m, botMsg]);
+setSending(false);
+}, 600);
+};
+
+
+const onSubmit = (e: FormEvent) => {
+e.preventDefault();
+sendMessage(input);
+};
 
 
