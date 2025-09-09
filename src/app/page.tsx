@@ -51,21 +51,21 @@ export default function ChatApp(): JSX.Element {
   };
 
   return (
-    <div className="max-w-xl mx-auto mt-8 bg-white rounded-2xl shadow-lg overflow-hidden border" style={{ height: "600px", display: "flex", flexDirection: "column" }}>
+  <div className="max-w-xl mx-auto mt-8 bg-white rounded-2xl shadow-lg overflow-hidden border  h-[600px] flex flex-col">
       <header className="px-4 py-3 border-b">
         <div className="font-semibold text-lg">Local Chat</div>
       </header>
 
-      <div ref={listRef} className="flex-1 p-4 overflow-y-auto" style={{ background: "#f7fafc" }}>
+      <div ref={listRef} className="flex-1 p-4 overflow-y-auto bg-[#f7fafc]">
        {messages.map((m) => (
-  <div
-    key={m.id}
-    className={cn(
-      "mb-3 flex",
-      m.sender === "you" ? "justify-end" : "justify-start"
-    )}
-  >
-    <div style={{ maxWidth: "78%" }}>
+        <div
+         key={m.id}
+         className={cn(
+         "mb-3 flex",
+         m.sender === "you" ? "justify-end" : "justify-start"
+       )}
+        >
+     <div className="max-w-[78%]">
       <div
         className={cn(
           "inline-block px-4 py-2 rounded-lg",
@@ -74,7 +74,7 @@ export default function ChatApp(): JSX.Element {
             : "bg-white text-gray-900 border"
         )}
       >
-        <div style={{ whiteSpace: "pre-wrap" }}>{m.text}</div>
+        <div className="whitespace-pre-wrap">{m.text}</div>
       </div>
 
       <div
@@ -92,7 +92,7 @@ export default function ChatApp(): JSX.Element {
 ))}
       </div>
 
-      <form onSubmit={onSubmit} className="p-4 border-t bg-white" style={{ display: "flex", gap: "8px" }}>
+      <form onSubmit={onSubmit} className="p-4 border-t bg-white flex gap-2">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
