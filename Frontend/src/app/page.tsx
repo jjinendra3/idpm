@@ -1,8 +1,8 @@
 "use client";
 import { cn } from "../lib/utils";
-
+import dayjs from 'dayjs';
 import React, { useState, useRef, useEffect, FormEvent } from "react";
-import type{JSX} from 'react';
+import type { JSX } from 'react';
 
 type Message = {
   id: string;
@@ -12,8 +12,7 @@ type Message = {
 };
 
 function nowTime() {
-  const d = new Date();
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return dayjs().format("HH:mm");
 }
 
 export default function ChatApp(): JSX.Element {
@@ -61,6 +60,13 @@ export default function ChatApp(): JSX.Element {
           <button
             className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-md bg-slate-700/50 text-slate-200 text-sm hover:bg-slate-700"
             type="button"
+            onClick={() => {
+              setMessages([
+                { id: "m1", sender: "bot", text: "Hello! This is a local chat. Type a message and press Send.", time: nowTime() },
+              ]);
+              setInput("");
+              setSending(false);
+            }}
           >
             New chat
           </button>
