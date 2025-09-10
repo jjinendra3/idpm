@@ -1,6 +1,3 @@
-"use client";
-
-
 import React from "react";
 import Nav from "./_components/Nav";
 import Hero from "./_components/Hero";
@@ -13,38 +10,38 @@ import Footer from "./_components/Footer";
 
 
 export default function LandingPage() {
-return (
-<div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black text-slate-100">
-<Nav />
+  return (
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black text-slate-100">
+      <Nav />
 
 
-<header className="w-full max-w-[1400px] mx-auto px-6 flex-1 flex items-center">
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-10 py-12 w-full items-center">
-<div className="space-y-6">
-<Hero />
+      <header className="w-full max-w-[1400px] mx-auto px-6 flex-1 flex items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 py-12 w-full items-center">
+          <div className="space-y-6">
+            <Hero />
 
-<h1 className="text-4xl md:text-5xl font-extrabold leading-tight">Intelligent Data Pipeline Manager</h1>
-<p className="text-slate-300 max-w-2xl text-lg">Bridge technical and non-technical stakeholders with automated data quality checks, anomaly detection, and natural-language conversational queries — all in one middleware layer. Real-time, modular, and production-ready.</p>
+            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">Intelligent Data Pipeline Manager</h1>
+            <p className="text-slate-300 max-w-2xl text-lg">Bridge technical and non-technical stakeholders with automated data quality checks, anomaly detection, and natural-language conversational queries — all in one middleware layer. Real-time, modular, and production-ready.</p>
 
-<div className="flex flex-wrap gap-4 mt-6">
-<StatCard title="99.9%" subtitle="Uptime & reliability" />
-<StatCard title="Real-time" subtitle="Data validation & alerts" />
-<StatCard title="NLQ" subtitle="Conversational queries" />
-</div>
-</div>
-
-
-<div className="flex items-center justify-center">
-<ConsoleMock />
-</div>
-</div>
-</header>
+            <div className="flex flex-wrap gap-4 mt-6">
+              <StatCard title="99.9%" subtitle="Uptime & reliability" />
+              <StatCard title="Real-time" subtitle="Data validation & alerts" />
+              <StatCard title="NLQ" subtitle="Conversational queries" />
+            </div>
+          </div>
 
 
-<FeaturesGrid />
-<HowSection />
-<PricingPanel />
-<Footer />
-</div>
-);
+          <div className="flex items-center justify-center">
+            <ConsoleMock />
+          </div>
+        </div>
+      </header>
+
+
+      <FeaturesGrid />
+      <HowSection />
+      <PricingPanel />
+      <Footer />
+    </div>
+  );
 }
