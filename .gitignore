@@ -2,6 +2,7 @@
 
 # dependencies
 node_modules
+.venv
 /.pnp
 .pnp.*
 .yarn/*
@@ -10,11 +11,13 @@ node_modules
 !.yarn/releases
 !.yarn/versions
 
+
+__pycache__
 # testing
 /coverage
 
 # next.js
-/.next/
+.next
 /out/
 
 # production
