@@ -51,7 +51,7 @@ export default function ChatApp(): JSX.Element {
 
   return (
     <div className="min-h-screen w-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black">
-      {/* header */}
+     
       <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-700 bg-slate-800/60 backdrop-blur-sm">
         <div>
           <div className="text-slate-100 font-semibold text-lg">ChatBot</div>
@@ -74,7 +74,7 @@ export default function ChatApp(): JSX.Element {
         </div>
       </header>
 
-      {/* messages */}
+
       <div
         ref={listRef}
         className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900"
@@ -129,7 +129,6 @@ export default function ChatApp(): JSX.Element {
         ))}
       </div>
 
-      {/* input */}
       <form
         onSubmit={onSubmit}
         className="px-6 py-4 border-t border-slate-700 bg-slate-800/60 backdrop-blur-sm"
