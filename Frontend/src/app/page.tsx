@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import React from "react";
+import dayjs from "dayjs";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black text-slate-100">
-      {/* NAV */}
+
       <nav className="w-full max-w-[1400px] mx-auto px-6 py-5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-400 to-emerald-400 flex items-center justify-center font-bold text-slate-900 shadow-md">
@@ -33,10 +34,10 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* HERO */}
+
       <header className="w-full max-w-[1400px] mx-auto px-6 flex-1 flex items-center">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 py-12 w-full items-center">
-          {/* Left: text */}
+
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 bg-slate-800/40 px-3 py-1 rounded-full text-xs text-cyan-300 w-max">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
@@ -64,7 +65,6 @@ export default function LandingPage() {
               <a href="#features" className="text-sm text-slate-300 hover:underline">Explore features →</a>
             </div>
 
-            {/* quick stats */}
             <div className="flex flex-wrap gap-4 mt-6">
               <div className="bg-slate-800/40 border border-slate-700 rounded-lg px-4 py-3 text-center min-w-[140px]">
                 <div className="text-2xl font-bold">99.9%</div>
@@ -81,7 +81,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Right: mockup */}
           <div className="flex items-center justify-center">
             <div className="relative w-full max-w-md">
               <div className="rounded-2xl bg-gradient-to-br from-slate-800/70 to-slate-900 border border-slate-700 shadow-xl p-4">
@@ -113,7 +112,6 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* decorative badges */}
               <div className="absolute -left-4 -top-4 bg-cyan-500/20 border border-cyan-300/10 text-cyan-300 px-2 py-1 rounded-md text-xs">MCP</div>
               <div className="absolute -right-4 -bottom-4 bg-emerald-400/10 border border-emerald-400/10 text-emerald-300 px-2 py-1 rounded-md text-xs">API • DB</div>
             </div>
@@ -121,7 +119,6 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* FEATURES */}
       <section id="features" className="w-full max-w-[1400px] mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-6">
@@ -159,7 +156,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
       <section id="how" className="w-full max-w-[1400px] mx-auto px-6 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           <div className="lg:col-span-2">
@@ -206,7 +202,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS + CTAs */}
+
       <section id="pricing" className="w-full max-w-[1400px] mx-auto px-6 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
@@ -216,13 +212,13 @@ export default function LandingPage() {
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 bg-slate-800/40 border border-slate-700 rounded-lg">
                 <div className="text-slate-100 font-semibold">Acme Analytics</div>
-                <div className="text-sm text-slate-300 mt-2">"We reduced false positives by 40% and made monitoring accessible to product owners."</div>
+                <div className="text-sm text-slate-300 mt-2">&quot;We reduced false positives by 40% and made monitoring accessible to product owners.&quot;</div>
                 <div className="text-xs text-slate-400 mt-3">— Head of Data</div>
               </div>
 
               <div className="p-4 bg-slate-800/40 border border-slate-700 rounded-lg">
                 <div className="text-slate-100 font-semibold">Nova Retail</div>
-                <div className="text-sm text-slate-300 mt-2">"The chat interface made it trivial for managers to ask for daily health reports."</div>
+                <div className="text-sm text-slate-300 mt-2">&quot;The chat interface made it trivial for managers to ask for daily health reports.&quot;</div>
                 <div className="text-xs text-slate-400 mt-3">— SRE Lead</div>
               </div>
             </div>
@@ -240,12 +236,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* FOOTER */}
+
       <footer id="contact" className="w-full mt-auto border-t border-slate-800/60">
         <div className="max-w-[1400px] mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-slate-300">
           <div>
             <div className="font-semibold text-slate-100">IDPM</div>
-            <div className="mt-2">Middleware + AI for trustworthy pipelines. Contact us at <a className="text-cyan-300 hover:underline" href="mailto:hello@idpm.example">hello@idpm.example</a></div>
+            <div className="mt-2">Middleware + AI for trustworthy pipelines.</div>
           </div>
 
           <div>
@@ -267,7 +263,7 @@ export default function LandingPage() {
         </div>
 
         <div className="max-w-[1400px] mx-auto px-6 pb-6 text-xs text-slate-500 flex items-center justify-between">
-          <div>© {new Date().getFullYear()} IDPM. All rights reserved.</div>
+          <div>© {dayjs().year()} IDPM. All rights reserved.</div>
           <div className="flex items-center gap-3">
             <a href="#" className="text-slate-400 hover:text-white">Twitter</a>
             <a href="#" className="text-slate-400 hover:text-white">GitHub</a>
