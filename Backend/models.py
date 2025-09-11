@@ -13,6 +13,7 @@ class DBUrls(SQLModel, table=True):
 
 class Messages(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    sentBy: str = Field(index=True)  # 'user' or 'ai'
     content: str | None = Field(default=None, index=True)
     conversation_id: int | None = Field(default=None, foreign_key="conversation.id")
     conversation: Conversation | None = Relationship(back_populates="messages")
