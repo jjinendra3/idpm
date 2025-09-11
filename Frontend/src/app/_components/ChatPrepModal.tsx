@@ -29,7 +29,7 @@ export default function ChatPrepModal({ open, onOpenChange }: Props) {
 
 
   useEffect(() => {
-    if (!open) return; // only run when modal is opened
+    if (!open) return; 
     try {
       const raw = sessionStorage.getItem("idpm_db");
       if (raw) {
@@ -38,7 +38,7 @@ export default function ChatPrepModal({ open, onOpenChange }: Props) {
         if (parsed?.url) setDbLink(parsed.url);
       }
     } catch {
-      // ignore
+      
     }
   }, [open]);
 
