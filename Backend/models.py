@@ -1,4 +1,7 @@
-from sqlmodel import Field, SQLModel, Relationship
+from sqlalchemy import Column
+from sqlmodel import Field, SQLModel, Relationship,JSON
+from sqlalchemy.dialects.postgresql import JSONB
+from typing import Any, Optional
 
 class Conversation(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -8,6 +11,9 @@ class Conversation(SQLModel, table=True):
 class DBUrls(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     url: str = Field(unique=True, index=True)
+    schemaDB: Optional[Any] = Field(
+        sa_column=Column(JSONB) 
+    )   
     conversation_id: int | None = Field(default=None, foreign_key="conversation.id")
     conversation: Conversation | None = Relationship(back_populates="urls")
 
