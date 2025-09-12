@@ -15,7 +15,6 @@ type Message = {
   isLoading?: boolean;
 };
 
-// TypeScript interfaces for markdown components
 interface MarkdownComponentProps {
   children?: React.ReactNode;
 }
@@ -50,7 +49,6 @@ export default function ChatApp() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
-  // Memoized functions to prevent unnecessary re-renders
   const checkIfAtBottom = useCallback(() => {
     if (!listRef.current) return false;
     const { scrollTop, scrollHeight, clientHeight } = listRef.current;
@@ -67,7 +65,6 @@ export default function ChatApp() {
     }
   }, [shouldAutoScroll]);
 
-  // Auto-scroll when messages change
   useEffect(() => {
     const timer = setTimeout(() => {
       scrollToBottom();
@@ -154,7 +151,6 @@ export default function ChatApp() {
     }
   }, [input, sendMessage]);
 
-  // Memoized LoaderDots component
   const LoaderDots = useCallback(() => (
     <div className="flex space-x-1 p-2">
       {[0, 1, 2].map((i) => (
@@ -176,7 +172,6 @@ export default function ChatApp() {
     </div>
   ), [isDark]);
 
-  // Memoized ThemeToggle component
   const ThemeToggle = useCallback(() => (
     <div className="flex items-center gap-2">
       <Sun className={cn("h-4 w-4", isDark ? "text-slate-400" : "text-amber-500")} />
@@ -204,7 +199,6 @@ export default function ChatApp() {
     </div>
   ), [isDark, toggleTheme]);
 
-  // Custom markdown components with proper TypeScript types
   const markdownComponents = {
     h1: ({ children }: MarkdownComponentProps) => (
       <h1 className="text-lg font-bold mb-2 mt-1">{children}</h1>
@@ -275,7 +269,7 @@ export default function ChatApp() {
 
   return (
     <div className={cn("min-h-screen w-full flex flex-col", isDark ? "bg-slate-900" : "bg-slate-50")}>
-      {/* Header */}
+
       <header className={cn(
         "relative flex items-center justify-between gap-4 px-6 py-4 border-b backdrop-blur-sm",
         isDark ? "border-slate-700 bg-slate-800/60" : "border-slate-200 bg-slate-100/80"
@@ -303,7 +297,6 @@ export default function ChatApp() {
         </div>
       </header>
 
-      {/* Messages */}
       <div
         ref={listRef}
         onScroll={handleScroll}
@@ -403,7 +396,6 @@ export default function ChatApp() {
         <div ref={bottomRef} className="h-1" />
       </div>
 
-      {/* Input */}
       <form
         onSubmit={onSubmit}
         className={cn(
