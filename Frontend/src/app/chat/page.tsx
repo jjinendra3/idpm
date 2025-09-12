@@ -2,9 +2,10 @@
 
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
-import React, { useState, useRef, useEffect, FormEvent,useCallback } from "react";
+import React, { useState, useRef, useEffect, FormEvent, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Moon, Sun } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 type Message = {
   id: string;
@@ -13,6 +14,20 @@ type Message = {
   time: string;
   isLoading?: boolean;
 };
+
+// TypeScript interfaces for markdown components
+interface MarkdownComponentProps {
+  children?: React.ReactNode;
+}
+
+interface CodeComponentProps extends MarkdownComponentProps {
+  inline?: boolean;
+  className?: string;
+}
+
+interface LinkComponentProps extends MarkdownComponentProps {
+  href?: string;
+}
 
 function nowTime() {
   return dayjs().format("HH:mm");
@@ -23,7 +38,7 @@ export default function ChatApp() {
     {
       id: "m1",
       sender: "bot",
-      text: "Hello! This is a local chat. Type a message and press Send.",
+      text: "Hello! This is a **local chat**. You can use *markdown* here!\n\n- Try **bold text**\n- Try *italic text*\n- Try `code blocks`\n- Try [links](https://example.com)\n\nType a message and press Send.",
       time: nowTime(),
     },
   ]);
@@ -35,14 +50,14 @@ export default function ChatApp() {
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
- 
-  const checkIfAtBottom =useCallback(() => {
+  // Memoized functions to prevent unnecessary re-renders
+  const checkIfAtBottom = useCallback(() => {
     if (!listRef.current) return false;
     const { scrollTop, scrollHeight, clientHeight } = listRef.current;
     return scrollHeight - scrollTop - clientHeight < 50;
   }, []);
 
-  const handleScroll =  useCallback(() => {
+  const handleScroll = useCallback(() => {
     setShouldAutoScroll(checkIfAtBottom());
   }, [checkIfAtBottom]);
 
@@ -52,15 +67,14 @@ export default function ChatApp() {
     }
   }, [shouldAutoScroll]);
 
-
-
+  // Auto-scroll when messages change
   useEffect(() => {
     const timer = setTimeout(() => {
       scrollToBottom();
     }, 100);
     
     return () => clearTimeout(timer);
-  }, [messages, shouldAutoScroll]);
+  }, [messages, scrollToBottom]);
 
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
@@ -89,12 +103,14 @@ export default function ChatApp() {
 
     setTimeout(() => {
 
+      const markdownResponse = `Got your message: "${text.trim()}"`;
+
       setMessages((m) =>
         m.map((msg) =>
           msg.id === loadingBotMsg.id
             ? {
                 ...msg,
-                text: `Got your message: "${text.trim()}"`,
+                text: markdownResponse,
                 isLoading: false,
               }
             : msg
@@ -107,18 +123,47 @@ export default function ChatApp() {
   const onSubmit = useCallback((e: FormEvent) => {
     e.preventDefault();
     sendMessage(input);
-  }, [input, sendMessage])
+  }, [input, sendMessage]);
 
-   const toggleTheme = useCallback(() => {
-    setIsDark(!isDark);
-  }, [isDark]);
+  const handleNewChat = useCallback(() => {
+    setMessages([
+      {
+        id: "m1",
+        sender: "bot",
+        text: "Hello! This is a **local chat**. You can use *markdown* here!\n\n- Try **bold text**\n- Try *italic text*\n- Try `code blocks`\n- Try [links](https://example.com)\n\nType a message and press Send.",
+        time: nowTime(),
+      },
+    ]);
+    setInput("");
+    setSending(false);
+    setShouldAutoScroll(true);
+  }, []);
 
+  const toggleTheme = useCallback(() => {
+    setIsDark(prev => !prev);
+  }, []);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
+  }, [input, sendMessage]);
+
+  // Memoized LoaderDots component
   const LoaderDots = useCallback(() => (
     <div className="flex space-x-1 p-2">
       {[0, 1, 2].map((i) => (
         <motion.span
           key={i}
-          className="block w-2 h-2 rounded-full bg-slate-300"
+          className={cn(
+            "block w-2 h-2 rounded-full",
+            isDark ? "bg-slate-300" : "bg-slate-600"
+          )}
           initial={{ opacity: 0.2, y: 0 }}
           animate={{ opacity: [0.2, 1, 0.2], y: [0, -3, 0] }}
           transition={{
@@ -131,7 +176,7 @@ export default function ChatApp() {
     </div>
   ), [isDark]);
 
-
+  // Memoized ThemeToggle component
   const ThemeToggle = useCallback(() => (
     <div className="flex items-center gap-2">
       <Sun className={cn("h-4 w-4", isDark ? "text-slate-400" : "text-amber-500")} />
@@ -140,7 +185,7 @@ export default function ChatApp() {
           "relative w-12 h-6 rounded-full cursor-pointer transition-colors duration-300",
           isDark ? "bg-slate-700" : "bg-slate-300"
         )}
-        onClick={() => setIsDark(!isDark)}
+        onClick={toggleTheme}
         whileTap={{ scale: 0.95 }}
       >
         <motion.div
@@ -159,15 +204,84 @@ export default function ChatApp() {
     </div>
   ), [isDark, toggleTheme]);
 
-  return (
-    <div className={cn("min-h-screen w-full flex flex-col", isDark ? "bg-slate-900" : "bg-gray-50")}>
+  // Custom markdown components with proper TypeScript types
+  const markdownComponents = {
+    h1: ({ children }: MarkdownComponentProps) => (
+      <h1 className="text-lg font-bold mb-2 mt-1">{children}</h1>
+    ),
+    h2: ({ children }: MarkdownComponentProps) => (
+      <h2 className="text-base font-semibold mb-1 mt-1">{children}</h2>
+    ),
+    h3: ({ children }: MarkdownComponentProps) => (
+      <h3 className="text-sm font-medium mb-1">{children}</h3>
+    ),
+    p: ({ children }: MarkdownComponentProps) => (
+      <p className="mb-2 last:mb-0">{children}</p>
+    ),
+    strong: ({ children }: MarkdownComponentProps) => (
+      <strong className="font-semibold">{children}</strong>
+    ),
+    em: ({ children }: MarkdownComponentProps) => (
+      <em className="italic">{children}</em>
+    ),
+    code: ({ children, inline, className }: CodeComponentProps) => (
+      <code className={cn(
+        inline ? "px-1 py-0.5 rounded text-xs font-mono" : "block p-3 rounded-md text-xs font-mono overflow-x-auto my-2",
+        isDark ? "bg-slate-800 text-cyan-300" : "bg-slate-200 text-blue-600",
+        className
+      )}>
+        {children}
+      </code>
+    ),
+    pre: ({ children }: MarkdownComponentProps) => (
+      <pre className={cn(
+        "p-3 rounded-md text-xs font-mono overflow-x-auto my-2",
+        isDark ? "bg-slate-800 text-slate-200" : "bg-slate-200 text-slate-800"
+      )}>
+        {children}
+      </pre>
+    ),
+    blockquote: ({ children }: MarkdownComponentProps) => (
+      <blockquote className={cn(
+        "border-l-4 pl-3 my-2 italic",
+        isDark ? "border-cyan-400 text-slate-300" : "border-blue-400 text-slate-600"
+      )}>
+        {children}
+      </blockquote>
+    ),
+    ul: ({ children }: MarkdownComponentProps) => (
+      <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>
+    ),
+    ol: ({ children }: MarkdownComponentProps) => (
+      <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>
+    ),
+    li: ({ children }: MarkdownComponentProps) => (
+      <li className="text-sm">{children}</li>
+    ),
+    a: ({ href, children }: LinkComponentProps) => (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn(
+          "underline hover:no-underline transition-colors",
+          isDark ? "text-cyan-400 hover:text-cyan-300" : "text-blue-600 hover:text-blue-700"
+        )}
+      >
+        {children}
+      </a>
+    ),
+  };
 
+  return (
+    <div className={cn("min-h-screen w-full flex flex-col", isDark ? "bg-slate-900" : "bg-slate-50")}>
+      {/* Header */}
       <header className={cn(
         "relative flex items-center justify-between gap-4 px-6 py-4 border-b backdrop-blur-sm",
-        isDark ? "border-slate-700 bg-slate-800/60" : "border-blue-100 bg-blue-50/80"
+        isDark ? "border-slate-700 bg-slate-800/60" : "border-slate-200 bg-slate-100/80"
       )}>
         <div>
-          <div className={cn("font-semibold text-lg", isDark ? "text-slate-100" : "text-slate-800")}>
+          <div className={cn("font-semibold text-lg", isDark ? "text-slate-100" : "text-slate-900")}>
             ChatBot
           </div>
         </div>
@@ -177,29 +291,20 @@ export default function ChatApp() {
               "hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-md text-sm transition-colors",
               isDark 
                 ? "bg-slate-700/50 text-slate-200 hover:bg-slate-700" 
-                : "bg-blue-100 text-slate-700 hover:bg-blue-200"
+                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
             )}
             type="button"
-            onClick={() => {
-              setMessages([
-                {
-                  id: "m1",
-                  sender: "bot",
-                  text: "Hello! This is a local chat. Type a message and press Send.",
-                  time: nowTime(),
-                },
-              ]);
-              setInput("");
-              setSending(false);
-              setShouldAutoScroll(true);
-            }}
+            onClick={handleNewChat}
           >
             New chat
           </button>
+          <div className={cn("text-sm", isDark ? "text-slate-400" : "text-slate-600")}>v1.0</div>
           <ThemeToggle />
         </div>
       </header>
- <div
+
+      {/* Messages */}
+      <div
         ref={listRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700"
@@ -254,7 +359,13 @@ export default function ChatApp() {
                   {m.isLoading ? (
                     <LoaderDots />
                   ) : (
-                    <div className="whitespace-pre-wrap text-sm">{m.text}</div>
+                    <div className="text-sm prose prose-sm max-w-none">
+                      <ReactMarkdown
+                        components={markdownComponents}
+                      >
+                        {m.text}
+                      </ReactMarkdown>
+                    </div>
                   )}
                 </motion.div>
                 <div
@@ -292,30 +403,26 @@ export default function ChatApp() {
         <div ref={bottomRef} className="h-1" />
       </div>
 
+      {/* Input */}
       <form
         onSubmit={onSubmit}
         className={cn(
           "px-6 py-4 border-t backdrop-blur-sm",
-          isDark ? "border-slate-700 bg-slate-800/60" : "border-amber-200 bg-gradient-to-r from-blue-50/80 to-amber-50/80"
+          isDark ? "border-slate-700 bg-slate-800/60" : "border-slate-200 bg-slate-100/80"
         )}
       >
         <div className="flex gap-3 items-center">
           <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message..."
+            onChange={handleInputChange}
+            placeholder="Type a message with **markdown** support..."
             className={cn(
               "flex-1 min-h-[44px] max-h-32 resize-none rounded-full px-4 py-3 border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm",
               isDark 
                 ? "bg-slate-900/60 border-slate-700 text-slate-100 placeholder:text-slate-500"
-                : "bg-blue-50/80 border-blue-200 text-slate-800 placeholder:text-slate-500"
+                : "bg-white border-slate-300 text-slate-800 placeholder:text-slate-500"
             )}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage(input);
-              }
-            }}
+            onKeyDown={handleKeyDown}
           />
           <motion.button
             type="submit"
