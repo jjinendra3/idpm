@@ -1,155 +1,431 @@
 "use client";
+
 import { cn } from "@/lib/utils";
-import dayjs from 'dayjs';
-import React, { useState, useRef, useEffect, FormEvent } from "react";
-import type { JSX } from 'react';
+import dayjs from "dayjs";
+import React, { useState, useRef, useEffect, FormEvent, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Moon, Sun } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 type Message = {
   id: string;
   sender: "you" | "bot";
   text: string;
   time: string;
+  isLoading?: boolean;
 };
+
+interface MarkdownComponentProps {
+  children?: React.ReactNode;
+}
+
+interface CodeComponentProps extends MarkdownComponentProps {
+  inline?: boolean;
+  className?: string;
+}
+
+interface LinkComponentProps extends MarkdownComponentProps {
+  href?: string;
+}
 
 function nowTime() {
   return dayjs().format("HH:mm");
 }
 
-export default function ChatApp(): JSX.Element {
+export default function ChatApp() {
   const [messages, setMessages] = useState<Message[]>([
-    { id: "m1", sender: "bot", text: "Hello! This is a local chat. Type a message and press Send.", time: nowTime() },
+    {
+      id: "m1",
+      sender: "bot",
+      text: "Hello! This is a **local chat**. You can use *markdown* here!\n\n- Try **bold text**\n- Try *italic text*\n- Try `code blocks`\n- Try [links](https://example.com)\n\nType a message and press Send.",
+      time: nowTime(),
+    },
   ]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [isDark, setIsDark] = useState(true);
+
   const listRef = useRef<HTMLDivElement | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
+  const checkIfAtBottom = useCallback(() => {
+    if (!listRef.current) return false;
+    const { scrollTop, scrollHeight, clientHeight } = listRef.current;
+    return scrollHeight - scrollTop - clientHeight < 50;
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    setShouldAutoScroll(checkIfAtBottom());
+  }, [checkIfAtBottom]);
+
+  const scrollToBottom = useCallback(() => {
+    if (shouldAutoScroll && bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [shouldAutoScroll]);
 
   useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
-    }
-  }, [messages]);
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [messages, scrollToBottom]);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
     setSending(true);
 
-    const userMsg: Message = { id: String(Date.now()) + "-u", sender: "you", text: text.trim(), time: nowTime() };
+    const userMsg: Message = {
+      id: String(Date.now()) + "-u",
+      sender: "you",
+      text: text.trim(),
+      time: nowTime(),
+    };
+
     setMessages((m) => [...m, userMsg]);
     setInput("");
+    setShouldAutoScroll(true);
+
+    const loadingBotMsg: Message = {
+      id: String(Date.now()) + "-b-loading",
+      sender: "bot",
+      text: "",
+      time: nowTime(),
+      isLoading: true,
+    };
+
+    setMessages((m) => [...m, loadingBotMsg]);
 
     setTimeout(() => {
-      const botMsg: Message = { id: String(Date.now()) + "-b", sender: "bot", text: `Got your message: "${text.trim()}"`, time: nowTime() };
-      setMessages((m) => [...m, botMsg]);
-      setSending(false);
-    }, 600);
-  };
 
-  const onSubmit = (e: FormEvent) => {
+      const markdownResponse = `Got your message: "${text.trim()}"`;
+
+      setMessages((m) =>
+        m.map((msg) =>
+          msg.id === loadingBotMsg.id
+            ? {
+                ...msg,
+                text: markdownResponse,
+                isLoading: false,
+              }
+            : msg
+        )
+      );
+      setSending(false);
+    }, 1100);
+  }, []);
+
+  const onSubmit = useCallback((e: FormEvent) => {
     e.preventDefault();
     sendMessage(input);
+  }, [input, sendMessage]);
+
+  const handleNewChat = useCallback(() => {
+    setMessages([
+      {
+        id: "m1",
+        sender: "bot",
+        text: "Hello! This is a **local chat**. You can use *markdown* here!\n\n- Try **bold text**\n- Try *italic text*\n- Try `code blocks`\n- Try [links](https://example.com)\n\nType a message and press Send.",
+        time: nowTime(),
+      },
+    ]);
+    setInput("");
+    setSending(false);
+    setShouldAutoScroll(true);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setIsDark(prev => !prev);
+  }, []);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
+  }, [input, sendMessage]);
+
+  const LoaderDots = useCallback(() => (
+    <div className="flex space-x-1 p-2">
+      {[0, 1, 2].map((i) => (
+        <motion.span
+          key={i}
+          className={cn(
+            "block w-2 h-2 rounded-full",
+            isDark ? "bg-slate-300" : "bg-slate-600"
+          )}
+          initial={{ opacity: 0.2, y: 0 }}
+          animate={{ opacity: [0.2, 1, 0.2], y: [0, -3, 0] }}
+          transition={{
+            repeat: Infinity,
+            duration: 1,
+            delay: i * 0.2,
+          }}
+        />
+      ))}
+    </div>
+  ), [isDark]);
+
+  const ThemeToggle = useCallback(() => (
+    <div className="flex items-center gap-2">
+      <Sun className={cn("h-4 w-4", isDark ? "text-slate-400" : "text-amber-500")} />
+      <motion.div
+        className={cn(
+          "relative w-12 h-6 rounded-full cursor-pointer transition-colors duration-300",
+          isDark ? "bg-slate-700" : "bg-slate-300"
+        )}
+        onClick={toggleTheme}
+        whileTap={{ scale: 0.95 }}
+      >
+        <motion.div
+          className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm"
+          animate={{
+            x: isDark ? 24 : 0,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 500,
+            damping: 30,
+          }}
+        />
+      </motion.div>
+      <Moon className={cn("h-4 w-4", isDark ? "text-slate-200" : "text-slate-400")} />
+    </div>
+  ), [isDark, toggleTheme]);
+
+  const markdownComponents = {
+    h1: ({ children }: MarkdownComponentProps) => (
+      <h1 className="text-lg font-bold mb-2 mt-1">{children}</h1>
+    ),
+    h2: ({ children }: MarkdownComponentProps) => (
+      <h2 className="text-base font-semibold mb-1 mt-1">{children}</h2>
+    ),
+    h3: ({ children }: MarkdownComponentProps) => (
+      <h3 className="text-sm font-medium mb-1">{children}</h3>
+    ),
+    p: ({ children }: MarkdownComponentProps) => (
+      <p className="mb-2 last:mb-0">{children}</p>
+    ),
+    strong: ({ children }: MarkdownComponentProps) => (
+      <strong className="font-semibold">{children}</strong>
+    ),
+    em: ({ children }: MarkdownComponentProps) => (
+      <em className="italic">{children}</em>
+    ),
+    code: ({ children, inline, className }: CodeComponentProps) => (
+      <code className={cn(
+        inline ? "px-1 py-0.5 rounded text-xs font-mono" : "block p-3 rounded-md text-xs font-mono overflow-x-auto my-2",
+        isDark ? "bg-slate-800 text-cyan-300" : "bg-slate-200 text-blue-600",
+        className
+      )}>
+        {children}
+      </code>
+    ),
+    pre: ({ children }: MarkdownComponentProps) => (
+      <pre className={cn(
+        "p-3 rounded-md text-xs font-mono overflow-x-auto my-2",
+        isDark ? "bg-slate-800 text-slate-200" : "bg-slate-200 text-slate-800"
+      )}>
+        {children}
+      </pre>
+    ),
+    blockquote: ({ children }: MarkdownComponentProps) => (
+      <blockquote className={cn(
+        "border-l-4 pl-3 my-2 italic",
+        isDark ? "border-cyan-400 text-slate-300" : "border-blue-400 text-slate-600"
+      )}>
+        {children}
+      </blockquote>
+    ),
+    ul: ({ children }: MarkdownComponentProps) => (
+      <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>
+    ),
+    ol: ({ children }: MarkdownComponentProps) => (
+      <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>
+    ),
+    li: ({ children }: MarkdownComponentProps) => (
+      <li className="text-sm">{children}</li>
+    ),
+    a: ({ href, children }: LinkComponentProps) => (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn(
+          "underline hover:no-underline transition-colors",
+          isDark ? "text-cyan-400 hover:text-cyan-300" : "text-blue-600 hover:text-blue-700"
+        )}
+      >
+        {children}
+      </a>
+    ),
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black">
-     
-      <header className="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-700 bg-slate-800/60 backdrop-blur-sm">
+    <div className={cn("min-h-screen w-full flex flex-col", isDark ? "bg-slate-900" : "bg-slate-50")}>
+
+      <header className={cn(
+        "relative flex items-center justify-between gap-4 px-6 py-4 border-b backdrop-blur-sm",
+        isDark ? "border-slate-700 bg-slate-800/60" : "border-slate-200 bg-slate-100/80"
+      )}>
         <div>
-          <div className="text-slate-100 font-semibold text-lg">ChatBot</div>
+          <div className={cn("font-semibold text-lg", isDark ? "text-slate-100" : "text-slate-900")}>
+            ChatBot
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button
-            className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-md bg-slate-700/50 text-slate-200 text-sm hover:bg-slate-700"
+            className={cn(
+              "hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-md text-sm transition-colors",
+              isDark 
+                ? "bg-slate-700/50 text-slate-200 hover:bg-slate-700" 
+                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+            )}
             type="button"
-            onClick={() => {
-              setMessages([
-                { id: "m1", sender: "bot", text: "Hello! This is a local chat. Type a message and press Send.", time: nowTime() },
-              ]);
-              setInput("");
-              setSending(false);
-            }}
+            onClick={handleNewChat}
           >
             New chat
           </button>
-          <div className="text-slate-400 text-sm">v1.0</div>
+          <div className={cn("text-sm", isDark ? "text-slate-400" : "text-slate-600")}>v1.0</div>
+          <ThemeToggle />
         </div>
       </header>
 
-
       <div
         ref={listRef}
-        className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900"
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700"
       >
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={cn(
-              "flex items-end gap-3",
-              m.sender === "you" ? "justify-end" : "justify-start"
-            )}
-          >
-            {m.sender === "bot" && (
-              <div className="flex-none">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-500 flex items-center justify-center text-xs text-white/90 font-medium">
-                  B
+        <AnimatePresence initial={false}>
+          {messages.map((m) => (
+            <motion.div
+              key={m.id}
+              className={cn(
+                "flex items-end gap-3",
+                m.sender === "you" ? "justify-end" : "justify-start"
+              )}
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 180, damping: 22 }}
+              layout
+            >
+              {m.sender === "bot" && (
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex-none"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <div className={cn(
+                    "h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium",
+                    isDark 
+                      ? "bg-gradient-to-br from-slate-600 to-slate-500 text-white/90" 
+                      : "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                  )}>
+                    B
+                  </div>
+                </motion.div>
+              )}
+
+              <div className="max-w-[78%]">
+                <motion.div
+                  className={cn(
+                    "inline-block px-4 py-3 rounded-2xl leading-snug break-words shadow-sm",
+                    m.sender === "you"
+                      ? isDark
+                        ? "bg-gradient-to-br from-cyan-500 to-teal-600 text-white rounded-br-md"
+                        : "bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-md"
+                      : isDark 
+                        ? "bg-slate-700/60 text-slate-100 border border-slate-700 rounded-bl-md"
+                        : "bg-slate-50 text-slate-800 border border-slate-200 rounded-bl-md"
+                  )}
+                  layout
+                  whileHover={{ scale: 1.02 }}
+                >
+                  {m.isLoading ? (
+                    <LoaderDots />
+                  ) : (
+                    <div className="text-sm prose prose-sm max-w-none">
+                      <ReactMarkdown
+                        components={markdownComponents}
+                      >
+                        {m.text}
+                      </ReactMarkdown>
+                    </div>
+                  )}
+                </motion.div>
+                <div
+                  className={cn(
+                    "mt-2 text-[11px] select-none",
+                    m.sender === "you"
+                      ? isDark ? "text-slate-300 text-right" : "text-slate-600 text-right"
+                      : isDark ? "text-slate-400 text-left" : "text-slate-600 text-left"
+                  )}
+                >
+                  {m.time}
                 </div>
               </div>
-            )}
 
-            <div className="max-w-[78%]">
-              <div
-                className={cn(
-                  "inline-block px-4 py-3 rounded-2xl leading-snug break-words",
-                  m.sender === "you"
-                    ? "bg-gradient-to-br from-cyan-500 to-teal-600 text-white rounded-br-md shadow-md"
-                    : "bg-slate-700/60 text-slate-100 border border-slate-700 rounded-bl-md"
-                )}
-              >
-                <div className="whitespace-pre-wrap text-sm">{m.text}</div>
-              </div>
-              <div
-                className={cn(
-                  "mt-2 text-[11px] select-none",
-                  m.sender === "you"
-                    ? "text-slate-300 text-right"
-                    : "text-slate-400 text-left"
-                )}
-              >
-                {m.time}
-              </div>
-            </div>
-
-            {m.sender === "you" && (
-              <div className="flex-none">
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-xs text-slate-900/95 font-semibold">
-                  Y
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+              {m.sender === "you" && (
+                <motion.div
+                  initial={{ scale: 0.85, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex-none"
+                  whileHover={{ scale: 1.04 }}
+                >
+                  <div className={cn(
+                    "h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold",
+                    isDark 
+                      ? "bg-gradient-to-br from-cyan-400 to-cyan-600 text-slate-900/95"
+                      : "bg-gradient-to-br from-blue-400 to-blue-500 text-white"
+                  )}>
+                    Y
+                  </div>
+                </motion.div>
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        <div ref={bottomRef} className="h-1" />
       </div>
 
       <form
         onSubmit={onSubmit}
-        className="px-6 py-4 border-t border-slate-700 bg-slate-800/60 backdrop-blur-sm"
+        className={cn(
+          "px-6 py-4 border-t backdrop-blur-sm",
+          isDark ? "border-slate-700 bg-slate-800/60" : "border-slate-200 bg-slate-100/80"
+        )}
       >
         <div className="flex gap-3 items-center">
           <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 min-h-[44px] max-h-32 resize-none rounded-full px-4 py-3 bg-slate-900/60 border border-slate-700 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-shadow"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage(input);
-              }
-            }}
+            onChange={handleInputChange}
+            placeholder="Type a message with **markdown** support..."
+            className={cn(
+              "flex-1 min-h-[44px] max-h-32 resize-none rounded-full px-4 py-3 border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm",
+              isDark 
+                ? "bg-slate-900/60 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                : "bg-white border-slate-300 text-slate-800 placeholder:text-slate-500"
+            )}
+            onKeyDown={handleKeyDown}
           />
-          <button
+          <motion.button
             type="submit"
             disabled={sending}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 text-slate-900 font-medium shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+            whileTap={{ scale: 0.97 }}
+            className={cn(
+              "inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium shadow-lg disabled:opacity-60 disabled:cursor-not-allowed transition-all",
+              isDark
+                ? "bg-gradient-to-br from-cyan-500 to-teal-600 text-slate-900"
+                : "bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
+            )}
           >
             {sending ? (
               <>
@@ -162,13 +438,13 @@ export default function ChatApp(): JSX.Element {
                     cx="12"
                     cy="12"
                     r="10"
-                    stroke="white"
-                    strokeOpacity="0.15"
+                    stroke="currentColor"
+                    strokeOpacity="0.25"
                     strokeWidth="4"
                   />
                   <path
                     d="M22 12a10 10 0 00-10-10"
-                    stroke="white"
+                    stroke="currentColor"
                     strokeWidth="4"
                     strokeLinecap="round"
                   />
@@ -178,7 +454,7 @@ export default function ChatApp(): JSX.Element {
             ) : (
               "Send"
             )}
-          </button>
+          </motion.button>
         </div>
       </form>
     </div>
