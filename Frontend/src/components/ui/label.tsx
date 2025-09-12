@@ -1,8 +1,17 @@
 import React from "react";
 
-export function Label({ children, htmlFor }: { children: React.ReactNode; htmlFor?: string }) {
+export function Label({
+  children,
+  htmlFor,
+}: {
+  children: React.ReactNode;
+  htmlFor?: string;
+}) {
   return (
-    <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-200 mb-1">
+    <label
+      htmlFor={htmlFor}
+      className="block text-sm font-medium text-slate-200 mb-1"
+    >
       {children}
     </label>
   );

@@ -3,7 +3,6 @@ from db_queries import schema_summary_columns_query, schema_summary_constraints_
 
 async def schema_summary(url: str):
     conn = await asyncpg.connect(url)
-    
     try:
         cols = await conn.fetch(schema_summary_columns_query)
         cons = await conn.fetch(schema_summary_constraints_query)

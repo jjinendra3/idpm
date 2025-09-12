@@ -1,17 +1,17 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import dayjs from "dayjs";
-import React, { useState, useRef, useEffect, FormEvent, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { generalStore } from "@/lib/store/store";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type Message = {
   id: string;
   sender: "you" | "bot";
   text: string;
-  time: string;
   isLoading?: boolean;
 };
 
@@ -28,17 +28,39 @@ interface LinkComponentProps extends MarkdownComponentProps {
   href?: string;
 }
 
-function nowTime() {
-  return dayjs().format("HH:mm");
-}
-
 export default function ChatApp() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const conversation_id = searchParams.get("id") || "";
+  const fetchConversation = generalStore((state) => state.getConversation);
+  const sendMessageFunc = generalStore((state) => state.sendMessage);
+  const [title, setTitle] = useState("New Chat");
+  useEffect(() => {
+    if (!conversation_id) return;
+    (async () => {
+      try {
+        const data = await fetchConversation(Number(conversation_id));
+        setTitle(data.title);
+        setMessages(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          data.messages.map((msg: any) => ({
+            id: String(msg.id) + (msg.sender === "user" ? "-u" : "-b"),
+            sender: msg.sender === "user" ? "you" : "bot",
+            text: msg.content,
+          })),
+        );
+      } catch (error) {
+        console.error(error);
+        router.push("/");
+      }
+    })();
+  }, []);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "m1",
       sender: "bot",
-      text: "Hello! This is a **local chat**. You can use *markdown* here!\n\n- Try **bold text**\n- Try *italic text*\n- Try `code blocks`\n- Try [links](https://example.com)\n\nType a message and press Send.",
-      time: nowTime(),
+      text: `Hello! Feel free to ask any questions related to the connected databases.`,
     },
   ]);
   const [input, setInput] = useState("");
@@ -69,11 +91,11 @@ export default function ChatApp() {
     const timer = setTimeout(() => {
       scrollToBottom();
     }, 100);
-    
+
     return () => clearTimeout(timer);
   }, [messages, scrollToBottom]);
 
-  const sendMessage = useCallback(async (text: string) => {
+  const sendMessage = async (text: string) => {
     if (!text.trim()) return;
     setSending(true);
 
@@ -81,7 +103,6 @@ export default function ChatApp() {
       id: String(Date.now()) + "-u",
       sender: "you",
       text: text.trim(),
-      time: nowTime(),
     };
 
     setMessages((m) => [...m, userMsg]);
@@ -92,35 +113,32 @@ export default function ChatApp() {
       id: String(Date.now()) + "-b-loading",
       sender: "bot",
       text: "",
-      time: nowTime(),
       isLoading: true,
     };
 
     setMessages((m) => [...m, loadingBotMsg]);
-
-    setTimeout(() => {
-
-      const markdownResponse = `Got your message: "${text.trim()}"`;
-
+    try {
+      const response = await sendMessageFunc(text, Number(conversation_id));
+      console.log(response);
+      if (!response) throw new Error("Invalid response");
       setMessages((m) =>
         m.map((msg) =>
           msg.id === loadingBotMsg.id
             ? {
-                ...msg,
-                text: markdownResponse,
-                isLoading: false,
-              }
-            : msg
-        )
+              ...msg,
+              text: response,
+              isLoading: false,
+            }
+            : msg,
+        ),
       );
       setSending(false);
-    }, 1100);
-  }, []);
-
-  const onSubmit = useCallback((e: FormEvent) => {
-    e.preventDefault();
-    sendMessage(input);
-  }, [input, sendMessage]);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setSending(false);
+    }
+  };
 
   const handleNewChat = useCallback(() => {
     setMessages([
@@ -128,7 +146,6 @@ export default function ChatApp() {
         id: "m1",
         sender: "bot",
         text: "Hello! This is a **local chat**. You can use *markdown* here!\n\n- Try **bold text**\n- Try *italic text*\n- Try `code blocks`\n- Try [links](https://example.com)\n\nType a message and press Send.",
-        time: nowTime(),
       },
     ]);
     setInput("");
@@ -137,67 +154,79 @@ export default function ChatApp() {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setIsDark(prev => !prev);
+    setIsDark((prev) => !prev);
   }, []);
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
-  }, []);
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setInput(e.target.value);
+    },
+    [],
+  );
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage(input);
-    }
-  }, [input, sendMessage]);
+  const LoaderDots = useCallback(
+    () => (
+      <div className="flex space-x-1 p-2">
+        {[0, 1, 2].map((i) => (
+          <motion.span
+            key={i}
+            className={cn(
+              "block w-2 h-2 rounded-full",
+              isDark ? "bg-slate-300" : "bg-slate-600",
+            )}
+            initial={{ opacity: 0.2, y: 0 }}
+            animate={{ opacity: [0.2, 1, 0.2], y: [0, -3, 0] }}
+            transition={{
+              repeat: Infinity,
+              duration: 1,
+              delay: i * 0.2,
+            }}
+          />
+        ))}
+      </div>
+    ),
+    [isDark],
+  );
 
-  const LoaderDots = useCallback(() => (
-    <div className="flex space-x-1 p-2">
-      {[0, 1, 2].map((i) => (
-        <motion.span
-          key={i}
+  const ThemeToggle = useCallback(
+    () => (
+      <div className="flex items-center gap-2">
+        <Sun
           className={cn(
-            "block w-2 h-2 rounded-full",
-            isDark ? "bg-slate-300" : "bg-slate-600"
+            "h-4 w-4",
+            isDark ? "text-slate-400" : "text-amber-500",
           )}
-          initial={{ opacity: 0.2, y: 0 }}
-          animate={{ opacity: [0.2, 1, 0.2], y: [0, -3, 0] }}
-          transition={{
-            repeat: Infinity,
-            duration: 1,
-            delay: i * 0.2,
-          }}
         />
-      ))}
-    </div>
-  ), [isDark]);
-
-  const ThemeToggle = useCallback(() => (
-    <div className="flex items-center gap-2">
-      <Sun className={cn("h-4 w-4", isDark ? "text-slate-400" : "text-amber-500")} />
-      <motion.div
-        className={cn(
-          "relative w-12 h-6 rounded-full cursor-pointer transition-colors duration-300",
-          isDark ? "bg-slate-700" : "bg-slate-300"
-        )}
-        onClick={toggleTheme}
-        whileTap={{ scale: 0.95 }}
-      >
         <motion.div
-          className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm"
-          animate={{
-            x: isDark ? 24 : 0,
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 500,
-            damping: 30,
-          }}
+          className={cn(
+            "relative w-12 h-6 rounded-full cursor-pointer transition-colors duration-300",
+            isDark ? "bg-slate-700" : "bg-slate-300",
+          )}
+          onClick={toggleTheme}
+          whileTap={{ scale: 0.95 }}
+        >
+          <motion.div
+            className="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm"
+            animate={{
+              x: isDark ? 24 : 0,
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 500,
+              damping: 30,
+            }}
+          />
+        </motion.div>
+        <Moon
+          className={cn(
+            "h-4 w-4",
+            isDark ? "text-slate-200" : "text-slate-400",
+          )}
         />
-      </motion.div>
-      <Moon className={cn("h-4 w-4", isDark ? "text-slate-200" : "text-slate-400")} />
-    </div>
-  ), [isDark, toggleTheme]);
+      </div>
+    ),
+    [isDark, toggleTheme],
+  );
 
   const markdownComponents = {
     h1: ({ children }: MarkdownComponentProps) => (
@@ -219,27 +248,39 @@ export default function ChatApp() {
       <em className="italic">{children}</em>
     ),
     code: ({ children, inline, className }: CodeComponentProps) => (
-      <code className={cn(
-        inline ? "px-1 py-0.5 rounded text-xs font-mono" : "block p-3 rounded-md text-xs font-mono overflow-x-auto my-2",
-        isDark ? "bg-slate-800 text-cyan-300" : "bg-slate-200 text-blue-600",
-        className
-      )}>
+      <code
+        className={cn(
+          inline
+            ? "px-1 py-0.5 rounded text-xs font-mono"
+            : "block p-3 rounded-md text-xs font-mono overflow-x-auto my-2",
+          isDark ? "bg-slate-800 text-cyan-300" : "bg-slate-200 text-blue-600",
+          className,
+        )}
+      >
         {children}
       </code>
     ),
     pre: ({ children }: MarkdownComponentProps) => (
-      <pre className={cn(
-        "p-3 rounded-md text-xs font-mono overflow-x-auto my-2",
-        isDark ? "bg-slate-800 text-slate-200" : "bg-slate-200 text-slate-800"
-      )}>
+      <pre
+        className={cn(
+          "p-3 rounded-md text-xs font-mono overflow-x-auto my-2",
+          isDark
+            ? "bg-slate-800 text-slate-200"
+            : "bg-slate-200 text-slate-800",
+        )}
+      >
         {children}
       </pre>
     ),
     blockquote: ({ children }: MarkdownComponentProps) => (
-      <blockquote className={cn(
-        "border-l-4 pl-3 my-2 italic",
-        isDark ? "border-cyan-400 text-slate-300" : "border-blue-400 text-slate-600"
-      )}>
+      <blockquote
+        className={cn(
+          "border-l-4 pl-3 my-2 italic",
+          isDark
+            ? "border-cyan-400 text-slate-300"
+            : "border-blue-400 text-slate-600",
+        )}
+      >
         {children}
       </blockquote>
     ),
@@ -259,7 +300,9 @@ export default function ChatApp() {
         rel="noopener noreferrer"
         className={cn(
           "underline hover:no-underline transition-colors",
-          isDark ? "text-cyan-400 hover:text-cyan-300" : "text-blue-600 hover:text-blue-700"
+          isDark
+            ? "text-cyan-400 hover:text-cyan-300"
+            : "text-blue-600 hover:text-blue-700",
         )}
       >
         {children}
@@ -268,31 +311,51 @@ export default function ChatApp() {
   };
 
   return (
-    <div className={cn("min-h-screen w-full flex flex-col", isDark ? "bg-slate-900" : "bg-slate-50")}>
-
-      <header className={cn(
-        "relative flex items-center justify-between gap-4 px-6 py-4 border-b backdrop-blur-sm",
-        isDark ? "border-slate-700 bg-slate-800/60" : "border-slate-200 bg-slate-100/80"
-      )}>
+    <div
+      className={cn(
+        "min-h-screen w-full flex flex-col",
+        isDark ? "bg-slate-900" : "bg-slate-50",
+      )}
+    >
+      <header
+        className={cn(
+          "relative flex items-center justify-between gap-4 px-6 py-4 border-b backdrop-blur-sm",
+          isDark
+            ? "border-slate-700 bg-slate-800/60"
+            : "border-slate-200 bg-slate-100/80",
+        )}
+      >
         <div>
-          <div className={cn("font-semibold text-lg", isDark ? "text-slate-100" : "text-slate-900")}>
-            ChatBot
+          <div
+            className={cn(
+              "font-semibold text-lg",
+              isDark ? "text-slate-100" : "text-slate-900",
+            )}
+          >
+            {title}
           </div>
         </div>
         <div className="flex items-center gap-3">
           <button
             className={cn(
               "hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-md text-sm transition-colors",
-              isDark 
-                ? "bg-slate-700/50 text-slate-200 hover:bg-slate-700" 
-                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+              isDark
+                ? "bg-slate-700/50 text-slate-200 hover:bg-slate-700"
+                : "bg-slate-200 text-slate-700 hover:bg-slate-300",
             )}
             type="button"
             onClick={handleNewChat}
           >
             New chat
           </button>
-          <div className={cn("text-sm", isDark ? "text-slate-400" : "text-slate-600")}>v1.0</div>
+          <div
+            className={cn(
+              "text-sm",
+              isDark ? "text-slate-400" : "text-slate-600",
+            )}
+          >
+            v1.0
+          </div>
           <ThemeToggle />
         </div>
       </header>
@@ -308,7 +371,7 @@ export default function ChatApp() {
               key={m.id}
               className={cn(
                 "flex items-end gap-3",
-                m.sender === "you" ? "justify-end" : "justify-start"
+                m.sender === "you" ? "justify-end" : "justify-start",
               )}
               initial={{ opacity: 0, y: 10, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -323,12 +386,14 @@ export default function ChatApp() {
                   className="flex-none"
                   whileHover={{ scale: 1.05 }}
                 >
-                  <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium",
-                    isDark 
-                      ? "bg-gradient-to-br from-slate-600 to-slate-500 text-white/90" 
-                      : "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
-                  )}>
+                  <div
+                    className={cn(
+                      "h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium",
+                      isDark
+                        ? "bg-gradient-to-br from-slate-600 to-slate-500 text-white/90"
+                        : "bg-gradient-to-br from-blue-500 to-blue-600 text-white",
+                    )}
+                  >
                     B
                   </div>
                 </motion.div>
@@ -342,9 +407,9 @@ export default function ChatApp() {
                       ? isDark
                         ? "bg-gradient-to-br from-cyan-500 to-teal-600 text-white rounded-br-md"
                         : "bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-md"
-                      : isDark 
+                      : isDark
                         ? "bg-slate-700/60 text-slate-100 border border-slate-700 rounded-bl-md"
-                        : "bg-slate-50 text-slate-800 border border-slate-200 rounded-bl-md"
+                        : "bg-slate-50 text-slate-800 border border-slate-200 rounded-bl-md",
                   )}
                   layout
                   whileHover={{ scale: 1.02 }}
@@ -353,24 +418,12 @@ export default function ChatApp() {
                     <LoaderDots />
                   ) : (
                     <div className="text-sm prose prose-sm max-w-none">
-                      <ReactMarkdown
-                        components={markdownComponents}
-                      >
+                      <ReactMarkdown components={markdownComponents}>
                         {m.text}
                       </ReactMarkdown>
                     </div>
                   )}
                 </motion.div>
-                <div
-                  className={cn(
-                    "mt-2 text-[11px] select-none",
-                    m.sender === "you"
-                      ? isDark ? "text-slate-300 text-right" : "text-slate-600 text-right"
-                      : isDark ? "text-slate-400 text-left" : "text-slate-600 text-left"
-                  )}
-                >
-                  {m.time}
-                </div>
               </div>
 
               {m.sender === "you" && (
@@ -380,12 +433,14 @@ export default function ChatApp() {
                   className="flex-none"
                   whileHover={{ scale: 1.04 }}
                 >
-                  <div className={cn(
-                    "h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold",
-                    isDark 
-                      ? "bg-gradient-to-br from-cyan-400 to-cyan-600 text-slate-900/95"
-                      : "bg-gradient-to-br from-blue-400 to-blue-500 text-white"
-                  )}>
+                  <div
+                    className={cn(
+                      "h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold",
+                      isDark
+                        ? "bg-gradient-to-br from-cyan-400 to-cyan-600 text-slate-900/95"
+                        : "bg-gradient-to-br from-blue-400 to-blue-500 text-white",
+                    )}
+                  >
                     Y
                   </div>
                 </motion.div>
@@ -397,10 +452,15 @@ export default function ChatApp() {
       </div>
 
       <form
-        onSubmit={onSubmit}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          await sendMessage(input);
+        }}
         className={cn(
           "px-6 py-4 border-t backdrop-blur-sm",
-          isDark ? "border-slate-700 bg-slate-800/60" : "border-slate-200 bg-slate-100/80"
+          isDark
+            ? "border-slate-700 bg-slate-800/60"
+            : "border-slate-200 bg-slate-100/80",
         )}
       >
         <div className="flex gap-3 items-center">
@@ -410,11 +470,16 @@ export default function ChatApp() {
             placeholder="Type a message with **markdown** support..."
             className={cn(
               "flex-1 min-h-[44px] max-h-32 resize-none rounded-full px-4 py-3 border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm",
-              isDark 
+              isDark
                 ? "bg-slate-900/60 border-slate-700 text-slate-100 placeholder:text-slate-500"
-                : "bg-white border-slate-300 text-slate-800 placeholder:text-slate-500"
+                : "bg-white border-slate-300 text-slate-800 placeholder:text-slate-500",
             )}
-            onKeyDown={handleKeyDown}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage(input);
+              }
+            }}
           />
           <motion.button
             type="submit"
@@ -424,31 +489,12 @@ export default function ChatApp() {
               "inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium shadow-lg disabled:opacity-60 disabled:cursor-not-allowed transition-all",
               isDark
                 ? "bg-gradient-to-br from-cyan-500 to-teal-600 text-slate-900"
-                : "bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
+                : "bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700",
             )}
           >
             {sending ? (
               <>
-                <svg
-                  className="w-4 h-4 animate-spin"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeOpacity="0.25"
-                    strokeWidth="4"
-                  />
-                  <path
-                    d="M22 12a10 10 0 00-10-10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                  />
-                </svg>
+                <Loader2 className="w-4 h-4 animate-spin" />
                 Sending...
               </>
             ) : (

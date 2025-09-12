@@ -1,7 +1,7 @@
 schema_summary_columns_query = """
     SELECT table_schema, table_name, column_name, data_type, is_nullable
     FROM information_schema.columns
-    WHERE table_schema NOT IN ('pg_catalog','information_schema','storage','vault','graphql_public','public','realtime','pgbouncer','auth','extensions','graphql')
+    WHERE table_schema NOT IN ('pg_catalog','information_schema','storage','vault','graphql_public','realtime','pgbouncer','auth','extensions','graphql')
     """
 schema_summary_constraints_query = """
     SELECT 
@@ -19,6 +19,6 @@ schema_summary_constraints_query = """
     LEFT JOIN information_schema.constraint_column_usage AS ccu
         ON ccu.constraint_name = tc.constraint_name
         AND ccu.table_schema = tc.table_schema
-    WHERE tc.table_schema NOT IN ('pg_catalog','information_schema','storage','vault','graphql_public','public','realtime','pgbouncer','auth','extensions','graphql')
+    WHERE tc.table_schema NOT IN ('pg_catalog','information_schema','storage','vault','graphql_public','realtime','pgbouncer','auth','extensions','graphql')
     ORDER BY tc.table_schema, tc.table_name;
     """

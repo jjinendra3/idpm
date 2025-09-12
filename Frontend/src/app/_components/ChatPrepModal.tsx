@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { generalStore } from "@/lib/store/store";
 
 type Props = {
   open: boolean;
@@ -23,13 +24,13 @@ type Props = {
 
 export default function ChatPrepModal({ open, onOpenChange }: Props) {
   const router = useRouter();
+  const createConversation = generalStore((state) => state.createConversation);
   const [dbType, setDbType] = useState<string>("postgres");
   const [dbLink, setDbLink] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
-
   useEffect(() => {
-    if (!open) return; 
+    if (!open) return;
     try {
       const raw = sessionStorage.getItem("idpm_db");
       if (raw) {
@@ -37,17 +38,15 @@ export default function ChatPrepModal({ open, onOpenChange }: Props) {
         if (parsed?.type) setDbType(parsed.type);
         if (parsed?.url) setDbLink(parsed.url);
       }
-    } catch {
-      
-    }
+    } catch {}
   }, [open]);
 
   if (!open) return null;
 
-
   function validateLink(type: string, link: string) {
     if (!link || link.trim().length < 5) return false;
-    if (type === "postgres" && !/^(postgres|postgresql):\/\//i.test(link)) return false;
+    if (type === "postgres" && !/^(postgres|postgresql):\/\//i.test(link))
+      return false;
     if (type === "mysql" && !/^mysql:\/\//i.test(link)) return false;
     return true;
   }
@@ -57,25 +56,31 @@ export default function ChatPrepModal({ open, onOpenChange }: Props) {
     onOpenChange(false);
   }
 
-  function handleContinue() {
+  async function handleContinue() {
     setError(null);
 
     if (!validateLink(dbType, dbLink)) {
-      setError("Please provide a valid database link matching the selected type.");
+      setError(
+        "Please provide a valid database link matching the selected type.",
+      );
       return;
     }
-
+    let response = null;
     try {
-      sessionStorage.setItem("idpm_db", JSON.stringify({ type: dbType, url: dbLink }));
-    } catch (err) {
-      console.warn("Failed to save DB info to sessionStorage:", err);
-
-      setError("Unable to save configuration locally. Try a different browser or disable strict storage settings.");
+      response = await createConversation([dbLink]);
+      if (!response || typeof response !== "number") {
+        setError("Failed to create conversation. Please try again.");
+        return;
+      }
+    } catch {
+      setError(
+        "Unable to parse the database link. Please check DB permissions and try again.",
+      );
       return;
     }
 
     onOpenChange(false);
-    setTimeout(() => router.push("/chat"), 60);
+    setTimeout(() => router.push(`/chat?id=${response}`), 60);
   }
 
   return (
@@ -84,7 +89,8 @@ export default function ChatPrepModal({ open, onOpenChange }: Props) {
         <DialogHeader>
           <DialogTitle>Connect a database</DialogTitle>
           <DialogDescription>
-            Provide a link to your database account and select its type. This will be used for the chat session.
+            Provide a link to your database account and select its type. This
+            will be used for the chat session.
           </DialogDescription>
         </DialogHeader>
 

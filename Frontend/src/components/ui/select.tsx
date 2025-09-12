@@ -1,6 +1,14 @@
 import React from "react";
 
-export function Select({ value, onValueChange, children }: { value?: string; onValueChange?: (v: string) => void; children?: React.ReactNode }) {
+export function Select({
+  value,
+  onValueChange,
+  children,
+}: {
+  value?: string;
+  onValueChange?: (v: string) => void;
+  children?: React.ReactNode;
+}) {
   return (
     <select
       value={value}
@@ -21,6 +29,12 @@ export function SelectValue({ placeholder }: { placeholder?: string }) {
 export function SelectContent({ children }: { children?: React.ReactNode }) {
   return <div>{children}</div>;
 }
-export function SelectItem({ value, children }: { value: string; children: React.ReactNode }) {
+export function SelectItem({
+  value,
+  children,
+}: {
+  value: string;
+  children: React.ReactNode;
+}) {
   return <option value={value}>{children}</option>;
 }

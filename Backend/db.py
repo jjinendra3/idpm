@@ -6,7 +6,10 @@ from sqlmodel import Session, SQLModel, create_engine
 engine = create_engine(DB_URL)
 
 def create_db_and_tables():
+# TODO: REMOVE THIS AS SOON AS WE GET ALEBEMIC
+    SQLModel.metadata.drop_all(engine)
     SQLModel.metadata.create_all(engine)
+    # Only till development phase
 
 def get_session():
     with Session(engine) as session:
