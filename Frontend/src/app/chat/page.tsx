@@ -29,8 +29,6 @@ export default function ChatApp() {
   ]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [isDark, setIsDark] = useState(true);
 
   const listRef = useRef<HTMLDivElement | null>(null);
