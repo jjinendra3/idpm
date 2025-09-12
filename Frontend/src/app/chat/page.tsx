@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import dayjs from "dayjs";
-import React, { useState, useRef, useEffect, FormEvent } from "react";
+import React, { useState, useRef, useEffect, FormEvent,useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Moon, Sun } from "lucide-react";
 
@@ -36,21 +36,22 @@ export default function ChatApp() {
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
  
-  const checkIfAtBottom = () => {
+  const checkIfAtBottom =useCallback(() => {
     if (!listRef.current) return false;
     const { scrollTop, scrollHeight, clientHeight } = listRef.current;
-    return scrollHeight - scrollTop - clientHeight < 50; 
-  };
+    return scrollHeight - scrollTop - clientHeight < 50;
+  }, []);
 
-  const handleScroll = () => {
+  const handleScroll =  useCallback(() => {
     setShouldAutoScroll(checkIfAtBottom());
-  };
+  }, [checkIfAtBottom]);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     if (shouldAutoScroll && bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  };
+  }, [shouldAutoScroll]);
+
 
 
   useEffect(() => {
@@ -61,7 +62,7 @@ export default function ChatApp() {
     return () => clearTimeout(timer);
   }, [messages, shouldAutoScroll]);
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
     setSending(true);
 
@@ -101,14 +102,18 @@ export default function ChatApp() {
       );
       setSending(false);
     }, 1100);
-  };
+  }, []);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = useCallback((e: FormEvent) => {
     e.preventDefault();
     sendMessage(input);
-  };
+  }, [input, sendMessage])
 
-  const LoaderDots = () => (
+   const toggleTheme = useCallback(() => {
+    setIsDark(!isDark);
+  }, [isDark]);
+
+  const LoaderDots = useCallback(() => (
     <div className="flex space-x-1 p-2">
       {[0, 1, 2].map((i) => (
         <motion.span
@@ -124,9 +129,10 @@ export default function ChatApp() {
         />
       ))}
     </div>
-  );
+  ), [isDark]);
 
-  const ThemeToggle = () => (
+
+  const ThemeToggle = useCallback(() => (
     <div className="flex items-center gap-2">
       <Sun className={cn("h-4 w-4", isDark ? "text-slate-400" : "text-amber-500")} />
       <motion.div
@@ -151,7 +157,7 @@ export default function ChatApp() {
       </motion.div>
       <Moon className={cn("h-4 w-4", isDark ? "text-slate-200" : "text-slate-400")} />
     </div>
-  );
+  ), [isDark, toggleTheme]);
 
   return (
     <div className={cn("min-h-screen w-full flex flex-col", isDark ? "bg-slate-900" : "bg-gray-50")}>
