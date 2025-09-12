@@ -1,8 +1,9 @@
-import Link from "next/link";
+
 import React from "react";
 
+type Props = { onOpenChat: () => void };
 
-export default function Nav() {
+export default function Nav({ onOpenChat }: Props) {
     return (
         <nav className="w-full max-w-[1400px] mx-auto px-6 py-5 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -21,14 +22,14 @@ export default function Nav() {
                 <a href="#contact" className="hover:text-white/90">Contact</a>
 
 
-                <Link href="/chat" className="ml-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-slate-900 font-semibold shadow-lg">
+                <button onClick={onOpenChat} className="ml-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-slate-900 font-semibold shadow-lg">
                     Try chat
-                </Link>
+                </button>
             </div>
 
 
             <div className="md:hidden">
-                <Link href="/chat" className="inline-flex items-center px-3 py-1.5 rounded-full bg-cyan-500 text-slate-900 text-sm font-medium">Chat</Link>
+                <button onClick={onOpenChat}  className="inline-flex items-center px-3 py-1.5 rounded-full bg-cyan-500 text-slate-900 text-sm font-medium">Chat</button>
             </div>
         </nav>
     );
