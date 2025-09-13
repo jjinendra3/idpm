@@ -10,7 +10,7 @@ import { Message } from './types';
 import { generalStore } from "@/lib/store/store";
 import { useRouter, useSearchParams } from "next/navigation";
 
-// Define proper types for store data
+
 interface ConversationData {
   title: string;
   messages: {
@@ -33,10 +33,9 @@ export default function ChatApp() {
   const fetchConversation = generalStore((state: { getConversation: (id: number) => Promise<ConversationData> }) => state.getConversation);
   const sendMessageFunc = generalStore((state: { sendMessage: (message: string, id: number) => Promise<string> }) => state.sendMessage);
 
-  // Theme state
   const [isDark, setIsDark] = useState(true);
   
-  // Chat logic state (from useChatLogic)
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "m1",
@@ -48,11 +47,11 @@ export default function ChatApp() {
   const [sending, setSending] = useState(false);
   const [title, setTitle] = useState("New Chat");
   
-  // Scroll logic state (from useScrollToBottom)
+
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  // Scroll functions (from useScrollToBottom)
+
   const checkIfAtBottom = () => {
     if (!listRef.current) return false;
     const { scrollTop, scrollHeight, clientHeight } = listRef.current;
@@ -66,10 +65,10 @@ export default function ChatApp() {
   };
 
   const handleScroll = () => {
-    // Add scroll logic here if needed in future
+
   };
 
-  // Load conversation effect (from useChatLogic)
+
   useEffect(() => {
     if (!conversation_id) return;
     
@@ -93,13 +92,13 @@ export default function ChatApp() {
     loadConversation();
   }, [conversation_id, fetchConversation, router]);
 
-  // Auto-scroll effect (from useChatLogic)
+
   useEffect(() => {
     const timer = setTimeout(scrollToBottom, 100);
     return () => clearTimeout(timer);
   }, [messages]);
 
-  // Send message function (from useChatLogic)
+
   const sendMessage = async (text: string) => {
     if (!text.trim() || sending) return;
     
@@ -147,7 +146,7 @@ export default function ChatApp() {
     }
   };
 
-  // New chat handler (from useChatLogic)
+
   const handleNewChat = () => {
     setMessages([
       {
@@ -160,13 +159,12 @@ export default function ChatApp() {
     setSending(false);
   };
 
-  // Form submit handler
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     sendMessage(input);
   };
 
-  // Theme toggle
   const toggleTheme = () => setIsDark(!isDark);
 
   return (
