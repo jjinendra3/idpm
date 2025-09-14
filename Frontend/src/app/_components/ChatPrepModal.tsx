@@ -29,18 +29,6 @@ export default function ChatPrepModal({ open, onOpenChange }: Props) {
   const [dbLink, setDbLink] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    try {
-      const raw = sessionStorage.getItem("idpm_db");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.type) setDbType(parsed.type);
-        if (parsed?.url) setDbLink(parsed.url);
-      }
-    } catch {}
-  }, [open]);
-
   if (!open) return null;
 
   function validateLink(type: string, link: string) {

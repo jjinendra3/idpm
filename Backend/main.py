@@ -8,7 +8,9 @@ from typing import List
 from graph import graph
 from llm import model
 from db_warehouse import schema_summary
+from fastapi import APIRouter
 app = FastAPI()
+router = APIRouter()
 
 origins = [
     "http://localhost:3000",
@@ -33,8 +35,12 @@ async def root():
 
 class ConversationCreate(BaseModel):
     dbUrls: List[str]
-@app.post("/conversation")
-async def create_conversation(conversation: ConversationCreate, session: Session = Depends(get_session)):
+
+@router.post("/conversation")
+async def create_conversation(
+    conversation: ConversationCreate, 
+     session: Session = Depends(get_session)
+):
     conversation_model = Conversation()
     conversation_model.urls = [DBUrls(url=url, schemaDB=await schema_summary(url)) for url in conversation.dbUrls]
     conversation_model.title=model.invoke(f"Generate a short title for a conversation about databases and less than 50 chars. The title should be concise and relevant to schema generated {conversation_model.urls[0]}.").content
@@ -44,7 +50,7 @@ async def create_conversation(conversation: ConversationCreate, session: Session
 
     return conversation_model
 
-@app.get("/conversation/{conversation_id}")
+@router.get("/conversation/{conversation_id}")
 async def get_conversation(conversation_id: int, session: Session = Depends(get_session)):
     conversation = session.get(Conversation, conversation_id)
     if not conversation:
@@ -57,7 +63,7 @@ async def get_conversation(conversation_id: int, session: Session = Depends(get_
     
     return conversation_dict
 
-@app.post("/message/{conversation_id}")
+@router.post("/message/{conversation_id}")
 async def add_message(conversation_id: int, message: str, session: Session = Depends(get_session)):
     result = await graph.ainvoke({
         "conversation_id": conversation_id,
@@ -66,3 +72,5 @@ async def add_message(conversation_id: int, message: str, session: Session = Dep
         "messages": [] 
     })
     return result["messages"][-1]
+
+app.include_router(router)
