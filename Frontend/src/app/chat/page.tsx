@@ -32,13 +32,19 @@ export default function ChatApp() {
   const [isDark, setIsDark] = useState(true);
 
 
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<Message[]>(
+    conversation_id
+    ? [] 
+    :[
     {
       id: "m1",
       sender: "bot",
       text: "Hello! Feel free to ask any questions related to the connected databases.",
     },
   ]);
+  
+  const [bootstrapped, setBootstrapped] = useState<boolean>(!conversation_id);
+
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [title, setTitle] = useState("New Chat");
@@ -65,27 +71,47 @@ export default function ChatApp() {
   };
 
 
-  useEffect(() => {
+   useEffect(() => {
     if (!conversation_id) return;
 
-    const loadConversation = async () => {
+    let alive = true;
+
+    (async () => {
       try {
         const data = await fetchConversation(Number(conversation_id));
+        if (!alive) return;
+
         setTitle(data.title);
+
+        const mapped: Message[] = data.messages.map((msg) => ({
+          id: String(msg.id) + (msg.sentBy === "human" ? "-u" : "-b"),
+          sender: msg.sentBy === "human" ? "you" : "bot",
+          text: msg.content,
+        }));
+
         setMessages(
-          data.messages.map((msg) => ({
-            id: String(msg.id) + (msg.sentBy === "human" ? "-u" : "-b"),
-            sender: msg.sentBy === "human" ? "you" : "bot",
-            text: msg.content,
-          }))
+          mapped.length > 0
+            ? mapped
+            : [
+                {
+                  id: "m1",
+                  sender: "bot",
+                  text:
+                    "Hello! Feel free to ask any questions related to the connected databases.",
+                },
+              ]
         );
       } catch (error) {
         console.error(error);
         router.push("/");
+      } finally {
+        setBootstrapped(true);
       }
-    };
+    })();
 
-    loadConversation();
+    return () => {
+      alive = false;
+    };
   }, [conversation_id, fetchConversation, router]);
 
 
@@ -171,17 +197,19 @@ export default function ChatApp() {
         onToggleTheme={toggleTheme}
         onNewChat={handleNewChat}
       />
-
+            
       <div
         ref={listRef}
         onScroll={handleScroll}
         className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700"
       >
-        <AnimatePresence initial={false}>
-          {messages.map((message) => (
-            <ChatMessage key={message.id} message={message} isDark={isDark} />
-          ))}
-        </AnimatePresence>
+        {bootstrapped && (
+          <AnimatePresence initial={false}>
+            {messages.map((message) => (
+              <ChatMessage key={message.id} message={message} isDark={isDark} />
+            ))}
+          </AnimatePresence>
+        )}
         <div ref={bottomRef} className="h-1" />
       </div>
 
