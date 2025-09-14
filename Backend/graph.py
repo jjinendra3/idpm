@@ -57,7 +57,6 @@ def save_messages(state: State):
     ai_message = Messages(
         sentBy="ai", content=state["messages"][-1].content, conversation_id=conversation_id
     )
-
     session.add(human_message)
     session.add(ai_message)
     session.commit()
@@ -77,8 +76,20 @@ def convert_sql_response_to_human_readable(state: State):
     if not state["sql_response"]:
         response = "The SQL query returned no results."
     else:
-        messages_with_system = state["messages"] + [HumanMessage(f"Based on the chat above, the answer returned by the SQL query is {state['sql_response']}. Please summarize it in a human-readable format.")]
-        response = model.invoke(messages_with_system)
+       messages_with_system = state["messages"] + [
+    HumanMessage(
+        f"""Based on the chat above, the answer returned by the SQL query is {state['sql_response']}. 
+Please convert it into a human-readable response following these rules:
+
+1. If the SQL query returns a single string value (from a fallback query like SELECT '...' AS response), return that string exactly as it is, with no modification.  
+2. If the SQL query returns tabular data that directly answers the question, summarize it concisely in natural language (e.g., counts, averages, names with values).  
+3. If the SQL query returns related but not final data (because the answer required data inspection beyond SQL), try to take out the exact answer to the query if possible using the dataset or provide a helpful and concise summary of that dataset so the user can understand the key information.  
+4. Do not repeat the SQL response verbatim, only give the natural-language summary.  
+5. Do not mention SQL, queries, databases, or that you are an AI model. Just provide the answer in plain human language."""
+    )
+]
+
+    response = model.invoke(messages_with_system)
 
     ai_message = AIMessage(response.content)
     return {"messages": state["messages"] + [ai_message]}

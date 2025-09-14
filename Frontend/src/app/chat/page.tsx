@@ -13,17 +13,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 interface ConversationData {
   title: string;
+  id: number;
   messages: {
     id: number;
-    sender: "user" | "bot";
+    sentBy: "human" | "ai";
     content: string;
+    conversation_id: number;
   }[];
-}
-
-interface StoreMessage {
-  id: number;
-  sender: "user" | "bot";
-  content: string;
 }
 
 export default function ChatApp() {
@@ -34,7 +30,7 @@ export default function ChatApp() {
   const sendMessageFunc = generalStore((state: { sendMessage: (message: string, id: number) => Promise<string> }) => state.sendMessage);
 
   const [isDark, setIsDark] = useState(true);
-  
+
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -46,7 +42,7 @@ export default function ChatApp() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [title, setTitle] = useState("New Chat");
-  
+
 
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -71,15 +67,15 @@ export default function ChatApp() {
 
   useEffect(() => {
     if (!conversation_id) return;
-    
+
     const loadConversation = async () => {
       try {
         const data = await fetchConversation(Number(conversation_id));
         setTitle(data.title);
         setMessages(
-          data.messages.map((msg: StoreMessage) => ({
-            id: String(msg.id) + (msg.sender === "user" ? "-u" : "-b"),
-            sender: msg.sender === "user" ? "you" : "bot",
+          data.messages.map((msg) => ({
+            id: String(msg.id) + (msg.sentBy === "human" ? "-u" : "-b"),
+            sender: msg.sentBy === "human" ? "you" : "bot",
             text: msg.content,
           }))
         );
@@ -101,7 +97,7 @@ export default function ChatApp() {
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || sending) return;
-    
+
     setSending(true);
     const userMsg: Message = {
       id: `${Date.now()}-u`,
@@ -118,13 +114,13 @@ export default function ChatApp() {
       text: "",
       isLoading: true,
     };
-    
+
     setMessages(prev => [...prev, loadingMsg]);
 
     try {
       const response = await sendMessageFunc(text, Number(conversation_id));
       if (!response) throw new Error("Invalid response");
-      
+
       setMessages(prev =>
         prev.map(msg =>
           msg.id === loadingMsg.id
@@ -169,11 +165,11 @@ export default function ChatApp() {
 
   return (
     <div className={cn("min-h-screen w-full flex flex-col", isDark ? "bg-slate-900" : "bg-slate-50")}>
-      <ChatHeader 
+      <ChatHeader
         title={title}
-        isDark={isDark} 
-        onToggleTheme={toggleTheme} 
-        onNewChat={handleNewChat} 
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        onNewChat={handleNewChat}
       />
 
       <div
