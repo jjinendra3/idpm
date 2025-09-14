@@ -19,8 +19,8 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-slate-900 via-slate-950 to-black text-slate-100">
-      <Nav onOpenChat={openChatModal} />
-
+      <Nav onOpenChat={openChatModal}/> 
+ 
       <ChatPrepModal open={open} onOpenChange={setOpen} />
 
       <header className="w-full max-w-[1400px] mx-auto px-6 flex-1 flex items-center">
