@@ -97,7 +97,7 @@ export default function ChatApp() {
                   id: "m1",
                   sender: "bot",
                   text:
-                    "Hello! Feel free to ask any questions related to the connected databases.",
+                    "Hello! Feel free to ask any questions related to the connected database.",
                 },
               ]
         );
