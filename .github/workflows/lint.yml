@@ -1,0 +1,23 @@
+name: Lint
+
+on:
+  pull_request:
+
+jobs:
+  lint-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install flake8 black
+
+      - name: Run linters on Backend
+        run: |
+          black --check Backend
+          flake8 Backend
