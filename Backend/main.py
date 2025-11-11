@@ -67,6 +67,7 @@ async def add_message(conversation_id: int, message: str, session: Session = Dep
     result = await graph.ainvoke({
         "conversation_id": conversation_id,
         "new_content": message,
+        # Make a bar chart comparing how many students are enrolled in Tech College and Arts College.
         "session": session,
         "messages": [],
         "image": False,

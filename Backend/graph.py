@@ -155,8 +155,10 @@ def run_python_code(state: State):
         if code.endswith("```"):
             code = code[:-3].strip()
     exec_locals = {}
-    exec(code, safe_globals, exec_locals)
-    
+    try:
+        exec(code, safe_globals, exec_locals)
+    except Exception as e:
+        print(f"Error executing code: {e}") 
     try:
         with open("output.png", "rb") as file:
             encoded_bytes = base64.b64encode(file.read())
