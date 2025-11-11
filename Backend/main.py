@@ -68,6 +68,8 @@ async def add_message(conversation_id: int, message: str, session: Session = Dep
         "conversation_id": conversation_id,
         "new_content": message,
         "session": session,
-        "messages": [] 
+        "messages": [],
+        "image": False,
+        "image_type": "None"
     })
     return result["messages"][-1]
