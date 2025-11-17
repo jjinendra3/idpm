@@ -31,8 +31,7 @@ export default function Nav({ onOpenChat }: Props) {
           Contact
         </a>
 
-        <button
-          onClick={onOpenChat}
+        <button        
           className="ml-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 text-slate-900 font-semibold shadow-lg"
         >
           Try chat
