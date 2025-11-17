@@ -61,7 +61,6 @@ export default function Audiochat({ onTextCapture, onInterimTextChange, onClose 
 
       onInterimTextChange(combined);
 
-      // Optional custom final result if added to d.ts
       recognition.finalTranscript = combined;
 
       clearSilenceTimer();
