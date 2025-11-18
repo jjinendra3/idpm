@@ -22,9 +22,13 @@ export const generalStore = create<GeneralStore>()(
           throw new Error("Failed to get conversation");
         return response.data;
       },
-      sendMessage: async (message: string, conversationId: number) => {
+      sendMessage: async (message: string, conversationId: number,source: "text" | "voice" = "text") => {
         const response = await axios.post(
-          `${BACKEND_URL}/message/${conversationId}?message=${encodeURIComponent(message)}`,
+          `${BACKEND_URL}/message/${conversationId}`,
+              {
+             message,
+             source,            // ← send in JSON body
+              },
         );
         if (response.status !== 200)
           throw new Error("Failed to send message");

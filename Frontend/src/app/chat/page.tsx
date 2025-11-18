@@ -9,7 +9,7 @@ import { ChatInput } from "./ChatInput";
 import { Message } from './types';
 import { generalStore } from "@/lib/store/store";
 import { useRouter, useSearchParams } from "next/navigation";
-
+import AudioChat from "./Audiochat"; 
 
 interface ConversationData {
   title: string;
@@ -27,32 +27,34 @@ export default function ChatApp() {
   const searchParams = useSearchParams();
   const conversation_id = searchParams.get("id") || "";
   const fetchConversation = generalStore((state: { getConversation: (id: number) => Promise<ConversationData> }) => state.getConversation);
-  const sendMessageFunc = generalStore((state: { sendMessage: (message: string, id: number) => Promise<string> }) => state.sendMessage);
+  const sendMessageFunc = generalStore((state: { sendMessage: (message: string, id: number,  source?: "text" | "voice") => Promise<string> }) => state.sendMessage);
 
   const [isDark, setIsDark] = useState(true);
 
-
   const [messages, setMessages] = useState<Message[]>(
     conversation_id
-    ? [] 
-    :[
-    {
-      id: "m1",
-      sender: "bot",
-      text: "Hello! Feel free to ask any questions related to the connected databases.",
-    },
-  ]);
-  
+      ? []
+      : [
+          {
+            id: "m1",
+            sender: "bot",
+            text: "Hello! Feel free to ask any questions related to the connected databases.",
+          },
+        ]
+  );
+
   const [bootstrapped, setBootstrapped] = useState<boolean>(!conversation_id);
 
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [title, setTitle] = useState("New Chat");
 
-
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
+  // ✅ NEW STATE
+  const [showAudioChat, setShowAudioChat] = useState(false);
+  const [listening, setListening] = useState(false);
 
   const checkIfAtBottom = () => {
     if (!listRef.current) return false;
@@ -66,12 +68,9 @@ export default function ChatApp() {
     }
   };
 
-  const handleScroll = () => {
+  const handleScroll = () => {};
 
-  };
-
-
-   useEffect(() => {
+  useEffect(() => {
     if (!conversation_id) return;
 
     let alive = true;
@@ -114,12 +113,10 @@ export default function ChatApp() {
     };
   }, [conversation_id, fetchConversation, router]);
 
-
   useEffect(() => {
     const timer = setTimeout(scrollToBottom, 100);
     return () => clearTimeout(timer);
   }, [messages]);
-
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || sending) return;
@@ -131,7 +128,7 @@ export default function ChatApp() {
       text: text.trim(),
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
 
     const loadingMsg: Message = {
@@ -141,14 +138,14 @@ export default function ChatApp() {
       isLoading: true,
     };
 
-    setMessages(prev => [...prev, loadingMsg]);
+    setMessages((prev) => [...prev, loadingMsg]);
 
     try {
       const response = await sendMessageFunc(text, Number(conversation_id));
       if (!response) throw new Error("Invalid response");
 
-      setMessages(prev =>
-        prev.map(msg =>
+      setMessages((prev) =>
+        prev.map((msg) =>
           msg.id === loadingMsg.id
             ? { ...msg, text: response, isLoading: false }
             : msg
@@ -156,10 +153,14 @@ export default function ChatApp() {
       );
     } catch (error) {
       console.error(error);
-      setMessages(prev =>
-        prev.map(msg =>
+      setMessages((prev) =>
+        prev.map((msg) =>
           msg.id === loadingMsg.id
-            ? { ...msg, text: "Sorry, I encountered an error. Please try again.", isLoading: false }
+            ? {
+                ...msg,
+                text: "Sorry, I encountered an error. Please try again.",
+                isLoading: false,
+              }
             : msg
         )
       );
@@ -167,7 +168,6 @@ export default function ChatApp() {
       setSending(false);
     }
   };
-
 
   const handleNewChat = () => {
     setMessages([
@@ -181,11 +181,22 @@ export default function ChatApp() {
     setSending(false);
   };
 
-
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     sendMessage(input);
   };
+
+   useEffect(() => {
+  const handler = (e: Event) => {
+    const customEvent = e as CustomEvent<string>;
+    sendMessage(customEvent.detail);
+  };
+
+  window.addEventListener("VOICE_TEXT_READY", handler);
+  return () => window.removeEventListener("VOICE_TEXT_READY", handler);
+}, []);
+
+
 
   const toggleTheme = () => setIsDark(!isDark);
 
@@ -197,7 +208,7 @@ export default function ChatApp() {
         onToggleTheme={toggleTheme}
         onNewChat={handleNewChat}
       />
-            
+
       <div
         ref={listRef}
         onScroll={handleScroll}
@@ -219,7 +230,30 @@ export default function ChatApp() {
         onSubmit={handleSubmit}
         sending={sending}
         isDark={isDark}
+        onMicClick={() => {
+          setListening(true);   
+        }}  
+       onCancelMic={() => {
+          setListening(false);
+          setInput("");
+        }}
+        listening={listening} 
       />
+
+      {listening && 
+      ( <AudioChat
+         onInterimTextChange={(interimText) => {
+         setInput(interimText);
+         }}
+         onTextCapture= {(text: string) => { 
+          setInput(text); 
+          setTimeout(()=> sendMessageFunc(text, Number(conversation_id), "voice"), 50);
+          sendMessage(text); 
+          setListening(false); 
+          console.log("FROM CHILD:", text); }} 
+          onClose={() => setListening(false)}
+          />
+          )}
     </div>
   );
 }
