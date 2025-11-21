@@ -52,7 +52,6 @@ export default function ChatApp() {
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ NEW STATE
   const [showAudioChat, setShowAudioChat] = useState(false);
   const [listening, setListening] = useState(false);
 
@@ -118,8 +117,23 @@ export default function ChatApp() {
     return () => clearTimeout(timer);
   }, [messages]);
 
+   const convertImageUrls = (text: string) => {
+   const urls = text.match(/https?:\/\/\S+/g);
+  if (!urls) return text;
+
+  let updated = text;
+
+  urls.forEach((url) => {
+    updated = updated.replace(url, `![](${url})`);
+  });
+
+  return updated;
+};
+
   const sendMessage = async (text: string) => {
     if (!text.trim() || sending) return;
+
+     text = convertImageUrls(text);
 
     setSending(true);
     const userMsg: Message = {
