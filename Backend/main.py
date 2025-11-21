@@ -8,21 +8,20 @@ from typing import List
 from graph import graph
 from llm import model
 from db_warehouse import schema_summary
-from fastapi import APIRouter
 app = FastAPI()
-router = APIRouter()
 
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://idpm-puce.vercel.app",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,        # or ["*"] to allow all
+    allow_origins=['*'],
     allow_credentials=True,
-    allow_methods=["*"],          # allow all HTTP methods
-    allow_headers=["*"],          # allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 @app.on_event("startup")
 async def startup():
@@ -36,7 +35,7 @@ async def root():
 class ConversationCreate(BaseModel):
     dbUrls: List[str]
 
-@router.post("/conversation")
+@app.post("/conversation")
 async def create_conversation(
     conversation: ConversationCreate, 
      session: Session = Depends(get_session)
@@ -50,7 +49,7 @@ async def create_conversation(
 
     return conversation_model
 
-@router.get("/conversation/{conversation_id}")
+@app.get("/conversation/{conversation_id}")
 async def get_conversation(conversation_id: int, session: Session = Depends(get_session)):
     conversation = session.get(Conversation, conversation_id)
     if not conversation:
@@ -63,14 +62,15 @@ async def get_conversation(conversation_id: int, session: Session = Depends(get_
     
     return conversation_dict
 
-@router.post("/message/{conversation_id}")
+@app.post("/message/{conversation_id}")
 async def add_message(conversation_id: int, message: str, session: Session = Depends(get_session)):
     result = await graph.ainvoke({
         "conversation_id": conversation_id,
         "new_content": message,
+        # Make a bar chart comparing how many students are enrolled in Tech College and Arts College.
         "session": session,
-        "messages": [] 
+        "messages": [],
+        "image": False,
+        "image_type": "None"
     })
     return result["messages"][-1]
-
-app.include_router(router)

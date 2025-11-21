@@ -108,7 +108,7 @@ export default function ChatPrepModal({ open, onOpenChange }: Props) {
             <Button variant="ghost" onClick={handleCancel}>
               Cancel
             </Button>
-            <Button onClick={handleContinue}>Continue to chat</Button>
+            <Button onClick={handleContinue} className="cursor-pointer">Continue to chat</Button>
           </div>
         </DialogFooter>
       </DialogContent>
