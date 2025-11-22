@@ -111,21 +111,28 @@ def sql_to_image(state: State):
     user_message = state["messages"][-1] if state["messages"] else HumanMessage("Visualize SQL output.")
 
     messages_with_system = [
-        user_message,
-        HumanMessage(
-            f"""
-            Based on the message above, the SQL query output is:
+    user_message,
+    HumanMessage(
+        f"""
+        Based on the message above, the SQL query output is:
 
-            {state['sql_response']}
+        {state['sql_response']}
 
-            Using this data, create a **{state['image_type']}** visualization in Python.
-            Use any library (e.g., seaborn, matplotlib, pandas).
-            - The generated image **must be saved as 'output.png'** in the current directory.
-            - Output **only the Python code** — no explanations, comments, or text.
-            - Generate exactly one plot and save it as 'output.png'.
-            """
-        ),
-    ]
+        First, convert the SQL output into a valid Python list of dictionaries.
+        - Each row must be converted to a dict (e.g., {{"column1": value1, "column2": value2}})
+        - Do NOT use <Record ...> or any non-Python structure.
+
+        Then, using this clean Python data, create a **{state['image_type']}** visualization in Python.
+        Requirements:
+        - Use matplotlib or pandas (avoid seaborn unless necessary).
+        - The generated plot must be saved as 'output.png' in the current directory.
+        - Output **only the Python code**, no explanations.
+        - The Python code must be fully executable as-is.
+        - If data is insufficient, generate a simple plot using what is available.
+        - If no usable data exists at all, output exactly: NO DATA
+        """
+    ),
+]
 
     response = model.invoke(messages_with_system)
     return {"python_code": response.content}

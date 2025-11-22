@@ -9,7 +9,7 @@ import { ChatInput } from "./ChatInput";
 import { Message } from './types';
 import { generalStore } from "@/lib/store/store";
 import { useRouter, useSearchParams } from "next/navigation";
-import AudioChat from "./Audiochat"; 
+import AudioChat from "./Audiochat";
 
 interface ConversationData {
   title: string;
@@ -27,7 +27,7 @@ export default function ChatApp() {
   const searchParams = useSearchParams();
   const conversation_id = searchParams.get("id") || "";
   const fetchConversation = generalStore((state: { getConversation: (id: number) => Promise<ConversationData> }) => state.getConversation);
-  const sendMessageFunc = generalStore((state: { sendMessage: (message: string, id: number,  source?: "text" | "voice") => Promise<string> }) => state.sendMessage);
+  const sendMessageFunc = generalStore((state) => state.sendMessage);
 
   const [isDark, setIsDark] = useState(true);
 
@@ -35,12 +35,12 @@ export default function ChatApp() {
     conversation_id
       ? []
       : [
-          {
-            id: "m1",
-            sender: "bot",
-            text: "Hello! Feel free to ask any questions related to the connected databases.",
-          },
-        ]
+        {
+          id: "m1",
+          sender: "bot",
+          text: "Hello! Feel free to ask any questions related to the connected databases.",
+        },
+      ]
   );
 
   const [bootstrapped, setBootstrapped] = useState<boolean>(!conversation_id);
@@ -52,7 +52,6 @@ export default function ChatApp() {
   const listRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const [showAudioChat, setShowAudioChat] = useState(false);
   const [listening, setListening] = useState(false);
 
   const checkIfAtBottom = () => {
@@ -67,7 +66,7 @@ export default function ChatApp() {
     }
   };
 
-  const handleScroll = () => {};
+  const handleScroll = () => { };
 
   useEffect(() => {
     if (!conversation_id) return;
@@ -91,13 +90,13 @@ export default function ChatApp() {
           mapped.length > 0
             ? mapped
             : [
-                {
-                  id: "m1",
-                  sender: "bot",
-                  text:
-                    "Hello! Feel free to ask any questions related to the connected database.",
-                },
-              ]
+              {
+                id: "m1",
+                sender: "bot",
+                text:
+                  "Hello! Feel free to ask any questions related to the connected database.",
+              },
+            ]
         );
       } catch (error) {
         console.error(error);
@@ -117,23 +116,24 @@ export default function ChatApp() {
     return () => clearTimeout(timer);
   }, [messages]);
 
-   const convertImageUrls = (text: string) => {
-   const urls = text.match(/https?:\/\/\S+/g);
-  if (!urls) return text;
+  const convertImageUrls = (text: string) => {
+    const urls = text.match(/https?:\/\/\S+/g);
+    if (!urls) return text;
 
-  let updated = text;
+    let updated = text;
 
-  urls.forEach((url) => {
-    updated = updated.replace(url, `![](${url})`);
-  });
+    urls.forEach((url) => {
+      updated = updated.replace(url, `![](${url})`);
+    });
 
-  return updated;
-};
+    return updated;
+  };
 
   const sendMessage = async (text: string) => {
+    console.log("Sending message:", text, "for conversation ID:", conversation_id);
     if (!text.trim() || sending) return;
 
-     text = convertImageUrls(text);
+    text = convertImageUrls(text);
 
     setSending(true);
     const userMsg: Message = {
@@ -155,6 +155,7 @@ export default function ChatApp() {
     setMessages((prev) => [...prev, loadingMsg]);
 
     try {
+      console.log("About to send message:", text, conversation_id);
       const response = await sendMessageFunc(text, Number(conversation_id));
       if (!response) throw new Error("Invalid response");
 
@@ -171,10 +172,10 @@ export default function ChatApp() {
         prev.map((msg) =>
           msg.id === loadingMsg.id
             ? {
-                ...msg,
-                text: "Sorry, I encountered an error. Please try again.",
-                isLoading: false,
-              }
+              ...msg,
+              text: "Sorry, I encountered an error. Please try again.",
+              isLoading: false,
+            }
             : msg
         )
       );
@@ -200,15 +201,15 @@ export default function ChatApp() {
     sendMessage(input);
   };
 
-   useEffect(() => {
-  const handler = (e: Event) => {
-    const customEvent = e as CustomEvent<string>;
-    sendMessage(customEvent.detail);
-  };
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      sendMessage(customEvent.detail);
+    };
 
-  window.addEventListener("VOICE_TEXT_READY", handler);
-  return () => window.removeEventListener("VOICE_TEXT_READY", handler);
-}, []);
+    window.addEventListener("VOICE_TEXT_READY", handler);
+    return () => window.removeEventListener("VOICE_TEXT_READY", handler);
+  }, []);
 
 
 
@@ -245,29 +246,30 @@ export default function ChatApp() {
         sending={sending}
         isDark={isDark}
         onMicClick={() => {
-          setListening(true);   
-        }}  
-       onCancelMic={() => {
+          setListening(true);
+        }}
+        onCancelMic={() => {
           setListening(false);
           setInput("");
         }}
-        listening={listening} 
+        listening={listening}
       />
 
-      {listening && 
-      ( <AudioChat
-         onInterimTextChange={(interimText) => {
-         setInput(interimText);
-         }}
-         onTextCapture= {(text: string) => { 
-          setInput(text); 
-          setTimeout(()=> sendMessageFunc(text, Number(conversation_id), "voice"), 50);
-          sendMessage(text); 
-          setListening(false); 
-          console.log("FROM CHILD:", text); }} 
+      {listening &&
+        (<AudioChat
+          onInterimTextChange={(interimText) => {
+            setInput(interimText);
+          }}
+          onTextCapture={(text: string) => {
+            setInput(text);
+            setTimeout(() => sendMessageFunc(text, Number(conversation_id)), 50);
+            sendMessage(text);
+            setListening(false);
+            console.log("FROM CHILD:", text);
+          }}
           onClose={() => setListening(false)}
-          />
-          )}
+        />
+        )}
     </div>
   );
 }
